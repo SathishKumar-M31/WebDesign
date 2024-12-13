@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Tool Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>SEO Tool Analyzer</h1>
+        <form id="seo-form">
+            <div class="input-group">
+                <input type="url" id="url-input" name="url" placeholder="Enter website URL" required>
+                <button type="submit">Analyze</button>
+            </div>
+        </form>
+        
+        <div id="loading" class="hidden">Analyzing...</div>
+        
+        <div id="results" class="hidden">
+            <h2>SEO Parameters</h2>
+            <table id="seo-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody id="seo-params-body"></tbody>
+            </table>
+            
+            <div id="suggestions-section" class="hidden">
+                <h2>Improvement Suggestions</h2>
+                <ul id="suggestions-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('seo-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const url = document.getElementById('url-input').value;
+            
+            // Reset previous results
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('suggestions-section').classList.add('hidden');
+
+            fetch('/analyze', {
+                method: 'POST',
+                body: new FormData(e.target)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').classList.add('hidden');
+                
+                if (data.status === 'success') {
+                    const paramsBody = document.getElementById('seo-params-body');
+                    paramsBody.innerHTML = ''; // Clear previous results
+                    
+                    // Populate SEO Parameters
+                    Object.entries(data.seo_params).forEach(([param, value]) => {
+                        const row = paramsBody.insertRow();
+                        row.insertCell(0).textContent = param;
+                        row.insertCell(1).textContent = value;
+                    });
+                    
+                    // Populate Suggestions
+                    const suggestionsList = document.getElementById('suggestions-list');
+                    suggestionsList.innerHTML = '';
+                    data.suggestions.forEach(suggestion => {
+                        const li = document.createElement('li');
+                        li.textContent = suggestion;
+                        suggestionsList.appendChild(li);
+                    });
+                    
+                    document.getElementById('results').classList.remove('hidden');
+                    document.getElementById('suggestions-section').classList.remove('hidden');
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').classList.add('hidden');
+                console.error('Error:', error);
+                alert('An error occurred while analyzing the URL');
+            });
+        });
+    </script>
+</body>
+</html>
